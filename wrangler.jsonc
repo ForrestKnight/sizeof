@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sizeof",
+  "main": "src/index.tsx",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    { "pattern": "sizeof.dev", "custom_domain": true },
+    { "pattern": "www.sizeof.dev", "custom_domain": true }
+  ]
+}
