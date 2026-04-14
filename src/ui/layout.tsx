@@ -631,6 +631,7 @@ export const Layout: FC<{ title: string; children?: any }> = (props) => (
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>{props.title}</title>
       <meta name="description" content="A scanning instrument for source repositories. Measure what your codebase is made of." />
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
       <link

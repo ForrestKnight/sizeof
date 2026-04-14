@@ -7,6 +7,17 @@
   "observability": {
     "enabled": true
   },
+  "analytics_engine_datasets": [
+    { "binding": "ANALYTICS", "dataset": "sizeof_scans" }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sizeof-scans",
+      "database_id": "0c362d2d-03e7-4bdf-98a4-0eae60576fba",
+      "migrations_dir": "migrations"
+    }
+  ],
   "routes": [
     { "pattern": "sizeof.dev", "custom_domain": true },
     { "pattern": "www.sizeof.dev", "custom_domain": true }

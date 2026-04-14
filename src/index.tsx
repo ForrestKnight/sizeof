@@ -8,9 +8,12 @@ import { detectLanguage } from "./languages.js";
 import { countLines } from "./counter.js";
 import { harvestAnnotations, summarizeAnnotations, type Annotation } from "./annotations.js";
 import { generateComparisons } from "./compare.js";
+import { FAVICON_SVG } from "./ui/favicon.js";
 
 type Bindings = {
   GITHUB_TOKEN?: string;
+  ANALYTICS?: AnalyticsEngineDataset;
+  DB?: D1Database;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -73,6 +76,15 @@ function looksBinary(bytes: Uint8Array): boolean {
 }
 
 app.get("/", (c) => c.html(<HomePage />));
+
+app.get("/favicon.svg", (c) => {
+  return new Response(FAVICON_SVG, {
+    headers: {
+      "content-type": "image/svg+xml",
+      "cache-control": "public, max-age=86400",
+    },
+  });
+});
 
 app.get("/scan", async (c) => {
   const url = c.req.query("url");
@@ -182,6 +194,35 @@ app.get("/scan", async (c) => {
     const annotationCounts = summarizeAnnotations(allAnnotations);
     const comparisons = generateComparisons(totalBytes, totals.code);
 
+    const scanMs = Date.now() - start;
+
+    c.env.ANALYTICS?.writeDataPoint({
+      indexes: [`${spec.host}/${spec.owner}/${spec.repo}`],
+      blobs: [spec.host, spec.owner, spec.repo, meta.defaultBranch],
+      doubles: [totalFiles, totalBytes, totals.code, scanMs],
+    });
+
+    if (c.env.DB) {
+      c.executionCtx.waitUntil(
+        c.env.DB.prepare(
+          "INSERT INTO scans (ts, host, owner, repo, default_branch, total_files, total_bytes, total_code, scan_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+          .bind(
+            Date.now(),
+            spec.host,
+            spec.owner,
+            spec.repo,
+            meta.defaultBranch,
+            totalFiles,
+            totalBytes,
+            totals.code,
+            scanMs,
+          )
+          .run()
+          .catch((err) => console.error("d1 insert failed", err)),
+      );
+    }
+
     const data: ReportData = {
       repoUrl: meta.htmlUrl,
       repoName: `${spec.owner}/${spec.repo}`,
@@ -189,7 +230,7 @@ app.get("/scan", async (c) => {
       branch: meta.defaultBranch,
       description: meta.description,
       scannedAt: new Date().toISOString().slice(0, 10),
-      scanMs: Date.now() - start,
+      scanMs,
       totals,
       languages,
       comparisons,
