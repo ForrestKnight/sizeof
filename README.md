@@ -1,15 +1,13 @@
 # sizeof
 
-Counts blank lines, comment lines, and physical lines of source code in public GitHub and Codeberg repositories.
+Paste a GitHub or Codeberg URL at [sizeof.dev](https://sizeof.dev) and get back a report of what's inside the repository — no clone required. The tarball is streamed and measured in memory on a Cloudflare Worker.
 
-Live at [sizeof.dev](https://sizeof.dev). Paste a repo URL and you get:
+What you get:
 
 - Per-language line counts (code, comment, blank) across 80+ languages
 - TODO, FIXME, HACK, XXX, NOTE, BUG markers with file and line number
 - Longest, shortest, and most-commented files
 - Size comparisons — paperback novels, hours of reading aloud, printed pages
-
-No clone, no disk. The repository tarball is streamed and measured in memory on a Cloudflare Worker.
 
 ## Supported hosts
 

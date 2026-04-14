@@ -657,7 +657,7 @@ export const Layout: FC<{ title: string; children?: any }> = (props) => (
         <footer class="footer">
           <div class="footer-left">SIZEOF v0.1</div>
           <div class="footer-mid">
-            <a href="https://github.com/forrestknight" target="_blank" rel="noopener">FK CODES ↗</a>
+            <a href="https://github.com/forrestknight" target="_blank" rel="noopener">FORREST KNIGHT ↗</a>
           </div>
           <div class="footer-right">MIT — 2026</div>
         </footer>
