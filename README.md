@@ -1,6 +1,6 @@
 # sizeof
 
-Paste a GitHub or Codeberg URL at [sizeof.dev](https://sizeof.dev) and get back a report of what's inside the repository — no clone required. The tarball is streamed and measured in memory on a Cloudflare Worker.
+Paste a GitHub or Codeberg URL at [sizeof.dev](https://sizeof.dev) and get back a report of what's inside the repository without needing to clone it. The tarball is streamed and measured in memory on a Cloudflare Worker.
 
 What you get:
 
