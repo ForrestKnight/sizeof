@@ -13,7 +13,6 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "fflate": "^0.8.2",
     "hono": "^4.12.12"
   },
   "devDependencies": {

@@ -103,7 +103,10 @@ export async function fetchRepoMetadata(spec: RepoSpec, githubToken?: string): P
   };
 }
 
-export async function fetchTarball(meta: RepoMetadata, githubToken?: string): Promise<Uint8Array> {
+export async function fetchTarballStream(
+  meta: RepoMetadata,
+  githubToken?: string,
+): Promise<ReadableStream<Uint8Array>> {
   const { spec, defaultBranch } = meta;
 
   let url: string;
@@ -118,7 +121,7 @@ export async function fetchTarball(meta: RepoMetadata, githubToken?: string): Pr
 
   const res = await fetch(url, { headers, redirect: "follow" });
   if (!res.ok) throw new RepoError(`Failed to download tarball (${res.status}).`, 502);
+  if (!res.body) throw new RepoError("Tarball response had no body.", 502);
 
-  const buf = await res.arrayBuffer();
-  return new Uint8Array(buf);
+  return res.body;
 }

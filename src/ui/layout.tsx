@@ -219,7 +219,30 @@ const STYLES = `
     color: var(--accent);
   }
 
-  .input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .input-row button:disabled { cursor: wait; }
+
+  .input-row button.is-scanning {
+    color: var(--accent);
+    background: rgba(232, 168, 124, 0.06);
+  }
+
+  .scan-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 12px;
+    vertical-align: middle;
+    box-shadow: 0 0 0 0 rgba(232, 168, 124, 0.6);
+    animation: scan-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes scan-pulse {
+    0%   { opacity: 0.35; box-shadow: 0 0 0 0 rgba(232, 168, 124, 0.55); }
+    50%  { opacity: 1;    box-shadow: 0 0 0 6px rgba(232, 168, 124, 0); }
+    100% { opacity: 0.35; box-shadow: 0 0 0 0 rgba(232, 168, 124, 0); }
+  }
 
   .input-hint {
     margin-top: 14px;

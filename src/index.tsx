@@ -2,8 +2,8 @@ import { Hono } from "hono";
 import { HomePage } from "./ui/home.js";
 import { ReportPage, ErrorPage } from "./ui/report.js";
 import type { ReportData, LanguageRow, NotableFile } from "./ui/report.js";
-import { parseRepoUrl, fetchRepoMetadata, fetchTarball, RepoError } from "./fetch-repo.js";
-import { iterateTarball } from "./untar.js";
+import { parseRepoUrl, fetchRepoMetadata, fetchTarballStream, RepoError } from "./fetch-repo.js";
+import { iterateTarballStream } from "./untar.js";
 import { detectLanguage } from "./languages.js";
 import { countLines } from "./counter.js";
 import { harvestAnnotations, summarizeAnnotations, type Annotation } from "./annotations.js";
@@ -102,7 +102,7 @@ app.get("/scan", async (c) => {
 
   try {
     const meta = await fetchRepoMetadata(spec, c.env.GITHUB_TOKEN);
-    const tarball = await fetchTarball(meta, c.env.GITHUB_TOKEN);
+    const tarballStream = await fetchTarballStream(meta, c.env.GITHUB_TOKEN);
 
     const decoder = new TextDecoder("utf-8", { fatal: false, ignoreBOM: true });
     const langStats = new Map<string, LanguageRow>();
@@ -112,10 +112,7 @@ app.get("/scan", async (c) => {
     let totalBytes = 0;
     let totalFiles = 0;
 
-    for (const entry of iterateTarball(tarball)) {
-      if (entry.type !== "file") continue;
-      if (entry.size === 0) continue;
-      if (entry.size > MAX_FILE_BYTES) continue;
+    for await (const entry of iterateTarballStream(tarballStream, { maxFileBytes: MAX_FILE_BYTES })) {
       if (totalFiles >= MAX_TOTAL_FILES) break;
 
       const parts = entry.name.split("/");

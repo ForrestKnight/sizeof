@@ -1,5 +1,20 @@
 import type { FC } from "hono/jsx";
+import { raw } from "hono/html";
 import { Layout } from "./layout.js";
+
+const SCAN_SCRIPT = `
+  (function () {
+    var form = document.getElementById('scan-form');
+    if (!form) return;
+    form.addEventListener('submit', function () {
+      var btn = form.querySelector('button[type=submit]');
+      if (!btn) return;
+      btn.disabled = true;
+      btn.classList.add('is-scanning');
+      btn.innerHTML = '<span class="scan-dot"></span>Scanning…';
+    });
+  })();
+`;
 
 const FEATURES = [
   {
@@ -78,5 +93,6 @@ export const HomePage: FC = () => (
         </article>
       ))}
     </section>
+    <script>{raw(SCAN_SCRIPT)}</script>
   </Layout>
 );
