@@ -143,6 +143,13 @@ export const ReportPage: FC<{ data: ReportData }> = ({ data }) => {
       </div>
 
       <section class="coverage-grid">
+        <div class="coverage-note">
+          <div class="coverage-label">What this means</div>
+          <p>
+            Archive files are everything found in the downloaded repo. Source files are the ones included in the line
+            totals. Skipped files are generated, binary, empty, oversized, unsupported, or not useful for code counts.
+          </p>
+        </div>
         <div class="coverage-summary">
           <div class="coverage-label">Archive files seen</div>
           <div class="coverage-value">{fmt(data.coverage.archiveFiles)}</div>
