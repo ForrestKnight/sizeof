@@ -138,52 +138,6 @@ export const ReportPage: FC<{ data: ReportData }> = ({ data }) => {
 
       <div class="section-head">
         <span class="section-num">02</span>
-        <span class="section-title">Scan coverage</span>
-        <div class="section-rule" />
-      </div>
-
-      <section class="coverage-grid">
-        <div class="coverage-note">
-          <div class="coverage-label">What this means</div>
-          <p>
-            Archive files are everything found in the downloaded repo. Source files are the ones included in the line
-            totals. Skipped files are generated, binary, empty, oversized, unsupported, or not useful for code counts.
-          </p>
-        </div>
-        <div class="coverage-summary">
-          <div class="coverage-label">Archive files seen</div>
-          <div class="coverage-value">{fmt(data.coverage.archiveFiles)}</div>
-          <div class="coverage-detail">{scannedShare.toFixed(1)}% scanned as source</div>
-        </div>
-        <div class="coverage-summary">
-          <div class="coverage-label">Source files scanned</div>
-          <div class="coverage-value">{fmt(data.totals.files)}</div>
-          <div class="coverage-detail">included in language totals</div>
-        </div>
-        <div class="coverage-summary">
-          <div class="coverage-label">Files skipped</div>
-          <div class="coverage-value">{fmt(skippedTotal)}</div>
-          <div class="coverage-detail">excluded before counting lines</div>
-        </div>
-        <div class="coverage-breakdown">
-          {skippedRows.length === 0 ? (
-            <div class="coverage-row">
-              <span>No skipped files</span>
-              <strong class="num">0</strong>
-            </div>
-          ) : (
-            skippedRows.map(([label, count]) => (
-              <div class="coverage-row">
-                <span>{label}</span>
-                <strong class="num">{fmt(Number(count))}</strong>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      <div class="section-head">
-        <span class="section-num">03</span>
         <span class="section-title">Language breakdown</span>
         <div class="section-rule" />
       </div>
@@ -224,7 +178,7 @@ export const ReportPage: FC<{ data: ReportData }> = ({ data }) => {
       </table>
 
       <div class="section-head">
-        <span class="section-num">04</span>
+        <span class="section-num">03</span>
         <span class="section-title">Notable files</span>
         <div class="section-rule" />
       </div>
@@ -264,6 +218,45 @@ export const ReportPage: FC<{ data: ReportData }> = ({ data }) => {
           </ol>
         </div>
       </div>
+
+      <div class="section-head" style="border-top: 1px solid var(--border);">
+        <span class="section-num">04</span>
+        <span class="section-title">Scan coverage</span>
+        <div class="section-rule" />
+      </div>
+
+      <section class="coverage-grid">
+        <div class="coverage-summary">
+          <div class="coverage-label">Archive files seen</div>
+          <div class="coverage-value">{fmt(data.coverage.archiveFiles)}</div>
+          <div class="coverage-detail">{scannedShare.toFixed(1)}% scanned as source</div>
+        </div>
+        <div class="coverage-summary">
+          <div class="coverage-label">Source files scanned</div>
+          <div class="coverage-value">{fmt(data.totals.files)}</div>
+          <div class="coverage-detail">included in language totals</div>
+        </div>
+        <div class="coverage-summary">
+          <div class="coverage-label">Files skipped</div>
+          <div class="coverage-value">{fmt(skippedTotal)}</div>
+          <div class="coverage-detail">excluded before counting lines</div>
+        </div>
+        <div class="coverage-breakdown">
+          {skippedRows.length === 0 ? (
+            <div class="coverage-row">
+              <span>No skipped files</span>
+              <strong class="num">0</strong>
+            </div>
+          ) : (
+            skippedRows.map(([label, count]) => (
+              <div class="coverage-row">
+                <span>{label}</span>
+                <strong class="num">{fmt(Number(count))}</strong>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
 
       <div class="section-head" style="border-top: 1px solid var(--border);">
         <span class="section-num">05</span>

@@ -35,7 +35,7 @@ const FEATURES = [
   {
     num: "iv",
     title: "Notable Files",
-    body: "The longest, the shortest, the most and least documented files in your repository, ranked.",
+    body: "The longest, shortest, and most-commented files in your repository, ranked.",
   },
   {
     num: "v",
@@ -45,7 +45,7 @@ const FEATURES = [
   {
     num: "vi",
     title: "Stream Scanning",
-    body: "No clone, no disk, no waiting. Tarballs are streamed and scanned in-memory at the edge in seconds.",
+    body: "No clone, no disk. Repository archives are streamed and measured in memory.",
   },
 ];
 
