@@ -3,6 +3,7 @@ import type { FC } from "hono/jsx";
 
 const STYLES = `
   :root {
+    color-scheme: dark;
     --bg: #0A1612;
     --surface: #0F1F1A;
     --surface-2: #122723;
@@ -16,6 +17,23 @@ const STYLES = `
     --accent-dim: rgba(232, 168, 124, 0.6);
     --code-bg: #1A2A24;
     --highlight: rgba(232, 168, 124, 0.18);
+  }
+
+  html[data-theme="light"] {
+    color-scheme: light;
+    --bg: #F4EBD9;
+    --surface: #EFE4CF;
+    --surface-2: #E7D8BD;
+    --border: rgba(10, 22, 18, 0.10);
+    --border-mid: rgba(10, 22, 18, 0.16);
+    --border-strong: rgba(10, 22, 18, 0.26);
+    --text: #0A1612;
+    --text-dim: rgba(10, 22, 18, 0.62);
+    --text-faint: rgba(10, 22, 18, 0.38);
+    --accent: #A45F37;
+    --accent-dim: rgba(164, 95, 55, 0.62);
+    --code-bg: #E4D4B8;
+    --highlight: rgba(164, 95, 55, 0.14);
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,8 +56,9 @@ const STYLES = `
     content: '';
     position: fixed;
     inset: 0;
-    background-image: radial-gradient(circle at 20% 0%, rgba(232, 168, 124, 0.04), transparent 50%),
-                      radial-gradient(circle at 80% 100%, rgba(244, 235, 217, 0.02), transparent 50%);
+    background-image: radial-gradient(circle at 20% 0%, var(--highlight), transparent 52%),
+                      radial-gradient(circle at 80% 100%, color-mix(in srgb, var(--text) 4%, transparent), transparent 54%);
+    opacity: 0.28;
     pointer-events: none;
     z-index: 0;
   }
@@ -83,7 +102,12 @@ const STYLES = `
   }
 
   .header-left { justify-self: start; }
-  .header-right { justify-self: end; }
+  .header-right {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
   .brand {
     font-family: 'Newsreader', serif;
@@ -124,6 +148,29 @@ const STYLES = `
     color: var(--accent);
     border-color: var(--accent-dim);
     background: rgba(232, 168, 124, 0.04);
+  }
+
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 78px;
+    padding: 8px 14px;
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    cursor: pointer;
+    transition: all 180ms ease;
+  }
+
+  .theme-toggle:hover {
+    color: var(--accent);
+    border-color: var(--accent-dim);
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
   }
 
   /* ── HERO ─────────────────────────────────────── */
@@ -703,10 +750,47 @@ const STYLES = `
     .coverage-breakdown { border-top: 0; }
     .header { grid-template-columns: 1fr; gap: 16px; text-align: center; }
     .header-left, .header-right { justify-self: center; }
+    .header-right { flex-wrap: wrap; justify-content: center; }
   }
 `;
 
 const GH_ICON = `<svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>`;
+
+const THEME_BOOT = `
+  (function () {
+    try {
+      var theme = localStorage.getItem('sizeof-theme');
+      if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    } catch (_) {}
+  })();
+`;
+
+const THEME_SCRIPT = `
+  (function () {
+    var btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    function currentTheme() {
+      return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    }
+
+    function sync() {
+      var theme = currentTheme();
+      btn.textContent = theme === 'light' ? 'Dark' : 'Light';
+      btn.setAttribute('aria-label', theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode');
+    }
+
+    btn.addEventListener('click', function () {
+      var next = currentTheme() === 'light' ? 'dark' : 'light';
+      if (next === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      else document.documentElement.removeAttribute('data-theme');
+      try { localStorage.setItem('sizeof-theme', next); } catch (_) {}
+      sync();
+    });
+
+    sync();
+  })();
+`;
 
 export const Layout: FC<{ title: string; children?: any }> = (props) => (
   <html lang="en">
@@ -722,6 +806,7 @@ export const Layout: FC<{ title: string; children?: any }> = (props) => (
         href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,200;0,6..72,300;0,6..72,400;1,6..72,200;1,6..72,300;1,6..72,400&display=swap"
         rel="stylesheet"
       />
+      <script>{raw(THEME_BOOT)}</script>
       <style>{raw(STYLES)}</style>
     </head>
     <body>
@@ -732,6 +817,7 @@ export const Layout: FC<{ title: string; children?: any }> = (props) => (
           </div>
           <a href="/" class="brand">SIZEOF</a>
           <div class="header-right">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light mode">Light</button>
             <a class="gh-link" href="https://github.com/forrestknight/sizeof" target="_blank" rel="noopener">
               {raw(GH_ICON)}
               <span>Github</span>
@@ -740,13 +826,14 @@ export const Layout: FC<{ title: string; children?: any }> = (props) => (
         </header>
         {props.children}
         <footer class="footer">
-          <div class="footer-left">SIZEOF v0.1</div>
+          <div class="footer-left">SIZEOF v0.2</div>
           <div class="footer-mid">
             <a href="https://github.com/forrestknight" target="_blank" rel="noopener">FORREST KNIGHT ↗</a>
           </div>
           <div class="footer-right">MIT — 2026</div>
         </footer>
       </div>
+      <script>{raw(THEME_SCRIPT)}</script>
     </body>
   </html>
 );
