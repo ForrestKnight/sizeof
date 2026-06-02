@@ -116,6 +116,7 @@ class StreamByteBuffer {
 
 export type TarIterOptions = {
   maxFileBytes?: number;
+  shouldReadFile?: (name: string, size: number) => boolean;
 };
 
 export async function* iterateTarballStream(
@@ -123,6 +124,7 @@ export async function* iterateTarballStream(
   options: TarIterOptions = {},
 ): AsyncGenerator<TarEntry> {
   const maxFileBytes = options.maxFileBytes ?? Number.POSITIVE_INFINITY;
+  const shouldReadFile = options.shouldReadFile ?? (() => true);
 
   let decompressed: ReadableStream<Uint8Array>;
   try {
@@ -189,7 +191,7 @@ export async function* iterateTarballStream(
       else if (typeFlag === "2") kind = "symlink";
       else kind = "other";
 
-      if (kind === "file" && size > 0 && size <= maxFileBytes) {
+      if (kind === "file" && size > 0 && size <= maxFileBytes && shouldReadFile(name, size)) {
         const content = await buf.read(paddedSize);
         if (!content) break;
         yield { name, size, type: kind, content: content.subarray(0, size) };

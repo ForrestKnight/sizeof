@@ -53,7 +53,7 @@ const SKIP_FILES = new Set([
 ]);
 
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
-const MAX_TOTAL_FILES = 8000;
+const NOTABLE_FILE_LIMIT = 8;
 
 function shouldSkipPath(path: string): boolean {
   for (const d of SKIP_DIRS) if (path.includes(d)) return true;
@@ -73,6 +73,56 @@ function looksBinary(bytes: Uint8Array): boolean {
     if (nulls > 1) return true;
   }
   return false;
+}
+
+type FileScanStats = { path: string; language: string; lines: number; comments: number };
+
+function toNotable(f: FileScanStats): NotableFile {
+  return { path: f.path, language: f.language, lines: f.lines };
+}
+
+function insertTopFile(
+  files: FileScanStats[],
+  file: FileScanStats,
+  getScore: (file: FileScanStats) => number,
+  higherIsBetter: boolean,
+): void {
+  const score = getScore(file);
+  if (score <= 0) return;
+
+  let insertAt = files.length;
+  for (let i = 0; i < files.length; i++) {
+    const existingScore = getScore(files[i]);
+    if (higherIsBetter ? score > existingScore : score < existingScore) {
+      insertAt = i;
+      break;
+    }
+  }
+
+  if (insertAt >= NOTABLE_FILE_LIMIT && files.length >= NOTABLE_FILE_LIMIT) return;
+  files.splice(insertAt, 0, file);
+  if (files.length > NOTABLE_FILE_LIMIT) files.length = NOTABLE_FILE_LIMIT;
+}
+
+function insertMostCommented(files: FileScanStats[], file: FileScanStats): void {
+  if (file.comments <= 0) return;
+
+  let insertAt = files.length;
+  for (let i = 0; i < files.length; i++) {
+    if (file.comments > files[i].comments) {
+      insertAt = i;
+      break;
+    }
+  }
+
+  if (insertAt >= NOTABLE_FILE_LIMIT && files.length >= NOTABLE_FILE_LIMIT) return;
+  files.splice(insertAt, 0, file);
+  if (files.length > NOTABLE_FILE_LIMIT) files.length = NOTABLE_FILE_LIMIT;
+}
+
+function archivePathToRepoPath(name: string): string {
+  const firstSlash = name.indexOf("/");
+  return firstSlash >= 0 ? name.slice(firstSlash + 1) : "";
 }
 
 app.get("/", (c) => c.html(<HomePage />));
@@ -107,18 +157,22 @@ app.get("/scan", async (c) => {
     const decoder = new TextDecoder("utf-8", { fatal: false, ignoreBOM: true });
     const langStats = new Map<string, LanguageRow>();
     const allAnnotations: Annotation[] = [];
-    const fileStats: { path: string; language: string; lines: number; comments: number }[] = [];
+    const longestFiles: FileScanStats[] = [];
+    const shortestFiles: FileScanStats[] = [];
+    const mostCommentedFiles: FileScanStats[] = [];
 
     let totalBytes = 0;
     let totalFiles = 0;
 
-    for await (const entry of iterateTarballStream(tarballStream, { maxFileBytes: MAX_FILE_BYTES })) {
-      if (totalFiles >= MAX_TOTAL_FILES) break;
-
-      const parts = entry.name.split("/");
-      const path = parts.slice(1).join("/");
+    for await (const entry of iterateTarballStream(tarballStream, {
+      maxFileBytes: MAX_FILE_BYTES,
+      shouldReadFile: (name) => {
+        const path = archivePathToRepoPath(name);
+        return path.length > 0 && !shouldSkipPath(path);
+      },
+    })) {
+      const path = archivePathToRepoPath(entry.name);
       if (!path) continue;
-      if (shouldSkipPath(path)) continue;
       if (looksBinary(entry.content)) continue;
 
       const content = decoder.decode(entry.content);
@@ -150,7 +204,10 @@ app.get("/scan", async (c) => {
         allAnnotations.push(...anns);
       }
 
-      fileStats.push({ path, language: lang.name, lines: counts.total, comments: counts.comment });
+      const fileStats = { path, language: lang.name, lines: counts.total, comments: counts.comment };
+      insertTopFile(longestFiles, fileStats, (f) => f.lines, true);
+      insertTopFile(shortestFiles, fileStats, (f) => f.lines, false);
+      insertMostCommented(mostCommentedFiles, fileStats);
     }
 
     if (totalFiles === 0) {
@@ -170,23 +227,9 @@ app.get("/scan", async (c) => {
 
     const languages = [...langStats.values()].sort((a, b) => b.code - a.code);
 
-    const toNotable = (f: { path: string; language: string; lines: number }): NotableFile => ({
-      path: f.path,
-      language: f.language,
-      lines: f.lines,
-    });
-
-    const longest = [...fileStats].sort((a, b) => b.lines - a.lines).slice(0, 8).map(toNotable);
-    const shortest = [...fileStats]
-      .filter((f) => f.lines > 0)
-      .sort((a, b) => a.lines - b.lines)
-      .slice(0, 8)
-      .map(toNotable);
-    const mostCommented = [...fileStats]
-      .filter((f) => f.comments > 0)
-      .sort((a, b) => b.comments - a.comments)
-      .slice(0, 8)
-      .map((f) => ({ path: f.path, language: f.language, lines: f.comments }));
+    const longest = longestFiles.map(toNotable);
+    const shortest = shortestFiles.map(toNotable);
+    const mostCommented = mostCommentedFiles.map((f) => ({ path: f.path, language: f.language, lines: f.comments }));
 
     const annotationCounts = summarizeAnnotations(allAnnotations);
     const comparisons = generateComparisons(totalBytes, totals.code);
