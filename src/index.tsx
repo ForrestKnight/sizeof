@@ -18,25 +18,25 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-const SKIP_DIRS = [
-  "node_modules/",
-  ".git/",
-  "vendor/",
-  "dist/",
-  "build/",
-  ".next/",
-  ".nuxt/",
-  "target/",
-  "__pycache__/",
-  ".venv/",
-  "venv/",
-  "bower_components/",
-  ".pnpm-store/",
-  ".yarn/",
-  "out/",
-  ".turbo/",
-  ".cache/",
-];
+const SKIP_DIRS = new Set([
+  "node_modules",
+  ".git",
+  "vendor",
+  "dist",
+  "build",
+  ".next",
+  ".nuxt",
+  "target",
+  "__pycache__",
+  ".venv",
+  "venv",
+  "bower_components",
+  ".pnpm-store",
+  ".yarn",
+  "out",
+  ".turbo",
+  ".cache",
+]);
 
 const SKIP_FILES = new Set([
   "package-lock.json",
@@ -62,7 +62,11 @@ type PathSkipReason = keyof Pick<
 >;
 
 function getPathSkipReason(path: string): PathSkipReason | null {
-  for (const d of SKIP_DIRS) if (path.includes(d)) return "vendoredGenerated";
+  const segments = path.split("/");
+  for (let i = 0; i < segments.length - 1; i++) {
+    if (SKIP_DIRS.has(segments[i])) return "vendoredGenerated";
+  }
+
   const base = path.split("/").pop() ?? "";
   if (SKIP_FILES.has(base)) return "lockFile";
   if (base.endsWith(".min.js")) return "minified";
