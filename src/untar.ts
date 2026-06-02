@@ -116,6 +116,8 @@ class StreamByteBuffer {
 
 export type TarIterOptions = {
   maxFileBytes?: number;
+  onFileEntry?: (name: string, size: number) => void;
+  onFileSkipped?: (name: string, size: number, reason: "empty" | "too_large") => void;
   shouldReadFile?: (name: string, size: number) => boolean;
 };
 
@@ -124,6 +126,8 @@ export async function* iterateTarballStream(
   options: TarIterOptions = {},
 ): AsyncGenerator<TarEntry> {
   const maxFileBytes = options.maxFileBytes ?? Number.POSITIVE_INFINITY;
+  const onFileEntry = options.onFileEntry ?? (() => {});
+  const onFileSkipped = options.onFileSkipped ?? (() => {});
   const shouldReadFile = options.shouldReadFile ?? (() => true);
 
   let decompressed: ReadableStream<Uint8Array>;
@@ -191,11 +195,23 @@ export async function* iterateTarballStream(
       else if (typeFlag === "2") kind = "symlink";
       else kind = "other";
 
-      if (kind === "file" && size > 0 && size <= maxFileBytes && shouldReadFile(name, size)) {
-        const content = await buf.read(paddedSize);
-        if (!content) break;
-        yield { name, size, type: kind, content: content.subarray(0, size) };
-      } else {
+      if (kind === "file") {
+        onFileEntry(name, size);
+        if (size <= 0) {
+          onFileSkipped(name, size, "empty");
+        } else if (shouldReadFile(name, size)) {
+          if (size > maxFileBytes) {
+            onFileSkipped(name, size, "too_large");
+          } else {
+            const content = await buf.read(paddedSize);
+            if (!content) break;
+            yield { name, size, type: kind, content: content.subarray(0, size) };
+            continue;
+          }
+        }
+      }
+
+      {
         if (paddedSize > 0) {
           if (!(await buf.skip(paddedSize))) break;
         }

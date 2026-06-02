@@ -455,6 +455,61 @@ const STYLES = `
     color: var(--text);
   }
 
+  .coverage-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 1.4fr;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .coverage-summary {
+    padding: 28px 32px;
+    border-right: 1px solid var(--border);
+  }
+
+  .coverage-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+  }
+
+  .coverage-value {
+    font-family: 'Newsreader', serif;
+    font-weight: 300;
+    font-size: 32px;
+    line-height: 1;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .coverage-detail {
+    margin-top: 8px;
+    color: var(--text-faint);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+
+  .coverage-breakdown {
+    padding: 18px 32px;
+  }
+
+  .coverage-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  .coverage-row:last-child { border-bottom: 0; }
+  .coverage-row strong { color: var(--text); font-weight: 400; }
+
   .compare-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -630,8 +685,11 @@ const STYLES = `
     .header { padding: 20px 24px; }
     .hero { padding: 60px 24px; }
     .features, .stat-grid, .compare-grid { grid-template-columns: repeat(2, 1fr); }
+    .coverage-grid { grid-template-columns: repeat(2, 1fr); }
     .stat:nth-child(4n), .compare:nth-child(4n) { border-right: 1px solid var(--border); }
     .stat:nth-child(2n), .compare:nth-child(2n) { border-right: 0; }
+    .coverage-summary:nth-child(2n) { border-right: 0; }
+    .coverage-breakdown { grid-column: 1 / -1; border-top: 1px solid var(--border); }
     .feature:nth-child(3n) { border-right: 1px solid var(--border); }
     .feature:nth-child(2n) { border-right: 0; }
     .report-header { grid-template-columns: 1fr; }
@@ -639,7 +697,10 @@ const STYLES = `
 
   @media (max-width: 600px) {
     .features, .stat-grid, .compare-grid { grid-template-columns: 1fr; }
+    .coverage-grid { grid-template-columns: 1fr; }
     .stat, .compare, .feature { border-right: 0 !important; }
+    .coverage-summary { border-right: 0; border-bottom: 1px solid var(--border); }
+    .coverage-breakdown { border-top: 0; }
     .header { grid-template-columns: 1fr; gap: 16px; text-align: center; }
     .header-left, .header-right { justify-self: center; }
   }

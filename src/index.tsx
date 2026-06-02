@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { HomePage } from "./ui/home.js";
 import { ReportPage, ErrorPage } from "./ui/report.js";
-import type { ReportData, LanguageRow, NotableFile } from "./ui/report.js";
+import type { ReportData, LanguageRow, NotableFile, ScanCoverage } from "./ui/report.js";
 import { parseRepoUrl, fetchRepoMetadata, fetchTarballStream, RepoError } from "./fetch-repo.js";
 import { iterateTarballStream } from "./untar.js";
 import { detectLanguage } from "./languages.js";
@@ -55,14 +55,19 @@ const SKIP_FILES = new Set([
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 const NOTABLE_FILE_LIMIT = 8;
 
-function shouldSkipPath(path: string): boolean {
-  for (const d of SKIP_DIRS) if (path.includes(d)) return true;
+type PathSkipReason = keyof Pick<
+  ScanCoverage["skipped"],
+  "vendoredGenerated" | "lockFile" | "minified" | "sourceMap"
+>;
+
+function getPathSkipReason(path: string): PathSkipReason | null {
+  for (const d of SKIP_DIRS) if (path.includes(d)) return "vendoredGenerated";
   const base = path.split("/").pop() ?? "";
-  if (SKIP_FILES.has(base)) return true;
-  if (base.endsWith(".min.js")) return true;
-  if (base.endsWith(".min.css")) return true;
-  if (base.endsWith(".map")) return true;
-  return false;
+  if (SKIP_FILES.has(base)) return "lockFile";
+  if (base.endsWith(".min.js")) return "minified";
+  if (base.endsWith(".min.css")) return "minified";
+  if (base.endsWith(".map")) return "sourceMap";
+  return null;
 }
 
 function looksBinary(bytes: Uint8Array): boolean {
@@ -125,6 +130,22 @@ function archivePathToRepoPath(name: string): string {
   return firstSlash >= 0 ? name.slice(firstSlash + 1) : "";
 }
 
+function createCoverage(): ScanCoverage {
+  return {
+    archiveFiles: 0,
+    skipped: {
+      vendoredGenerated: 0,
+      lockFile: 0,
+      minified: 0,
+      sourceMap: 0,
+      binary: 0,
+      tooLarge: 0,
+      empty: 0,
+      unsupported: 0,
+    },
+  };
+}
+
 app.get("/", (c) => c.html(<HomePage />));
 
 app.get("/favicon.svg", (c) => {
@@ -160,27 +181,52 @@ app.get("/scan", async (c) => {
     const longestFiles: FileScanStats[] = [];
     const shortestFiles: FileScanStats[] = [];
     const mostCommentedFiles: FileScanStats[] = [];
+    const coverage = createCoverage();
 
     let totalBytes = 0;
     let totalFiles = 0;
 
     for await (const entry of iterateTarballStream(tarballStream, {
       maxFileBytes: MAX_FILE_BYTES,
+      onFileEntry: () => {
+        coverage.archiveFiles++;
+      },
+      onFileSkipped: (_name, _size, reason) => {
+        if (reason === "empty") coverage.skipped.empty++;
+        else coverage.skipped.tooLarge++;
+      },
       shouldReadFile: (name) => {
         const path = archivePathToRepoPath(name);
-        return path.length > 0 && !shouldSkipPath(path);
+        if (!path) {
+          coverage.skipped.unsupported++;
+          return false;
+        }
+
+        const reason = getPathSkipReason(path);
+        if (reason) {
+          coverage.skipped[reason]++;
+          return false;
+        }
+
+        return true;
       },
     })) {
       const path = archivePathToRepoPath(entry.name);
       if (!path) continue;
-      if (looksBinary(entry.content)) continue;
+      if (looksBinary(entry.content)) {
+        coverage.skipped.binary++;
+        continue;
+      }
 
       const content = decoder.decode(entry.content);
       const firstNewline = content.indexOf("\n");
       const firstLine = firstNewline >= 0 ? content.slice(0, firstNewline) : content;
 
       const lang = detectLanguage(path, firstLine);
-      if (!lang) continue;
+      if (!lang) {
+        coverage.skipped.unsupported++;
+        continue;
+      }
 
       const counts = countLines(content, lang);
 
@@ -276,6 +322,7 @@ app.get("/scan", async (c) => {
       comparisons,
       annotations: allAnnotations,
       annotationCounts,
+      coverage,
       longest,
       shortest,
       mostCommented,

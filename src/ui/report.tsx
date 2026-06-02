@@ -19,6 +19,20 @@ export type NotableFile = {
   lines: number;
 };
 
+export type ScanCoverage = {
+  archiveFiles: number;
+  skipped: {
+    vendoredGenerated: number;
+    lockFile: number;
+    minified: number;
+    sourceMap: number;
+    binary: number;
+    tooLarge: number;
+    empty: number;
+    unsupported: number;
+  };
+};
+
 export type ReportData = {
   repoUrl: string;
   repoName: string;
@@ -32,6 +46,7 @@ export type ReportData = {
   comparisons: Comparison[];
   annotations: Annotation[];
   annotationCounts: Record<AnnotationKind, number>;
+  coverage: ScanCoverage;
   longest: NotableFile[];
   shortest: NotableFile[];
   mostCommented: NotableFile[];
@@ -43,6 +58,19 @@ const pct = (n: number, total: number) => (total === 0 ? "0%" : `${((n / total) 
 export const ReportPage: FC<{ data: ReportData }> = ({ data }) => {
   const totalLines = data.totals.code + data.totals.comment + data.totals.blank;
   const ratioPct = totalLines === 0 ? 0 : (data.totals.comment / totalLines) * 100;
+  const skippedTotal = Object.values(data.coverage.skipped).reduce((sum, n) => sum + n, 0);
+  const scannedShare =
+    data.coverage.archiveFiles === 0 ? 0 : (data.totals.files / data.coverage.archiveFiles) * 100;
+  const skippedRows = [
+    ["Vendored/generated", data.coverage.skipped.vendoredGenerated],
+    ["Lock files", data.coverage.skipped.lockFile],
+    ["Minified files", data.coverage.skipped.minified],
+    ["Source maps", data.coverage.skipped.sourceMap],
+    ["Binary", data.coverage.skipped.binary],
+    ["Too large", data.coverage.skipped.tooLarge],
+    ["Empty", data.coverage.skipped.empty],
+    ["Unsupported", data.coverage.skipped.unsupported],
+  ].filter(([, count]) => Number(count) > 0);
 
   return (
     <Layout title={`sizeof — ${data.repoName}`}>
@@ -103,6 +131,45 @@ export const ReportPage: FC<{ data: ReportData }> = ({ data }) => {
 
       <div class="section-head">
         <span class="section-num">02</span>
+        <span class="section-title">Scan coverage</span>
+        <div class="section-rule" />
+      </div>
+
+      <section class="coverage-grid">
+        <div class="coverage-summary">
+          <div class="coverage-label">Archive files seen</div>
+          <div class="coverage-value">{fmt(data.coverage.archiveFiles)}</div>
+          <div class="coverage-detail">{scannedShare.toFixed(1)}% scanned as source</div>
+        </div>
+        <div class="coverage-summary">
+          <div class="coverage-label">Source files scanned</div>
+          <div class="coverage-value">{fmt(data.totals.files)}</div>
+          <div class="coverage-detail">included in language totals</div>
+        </div>
+        <div class="coverage-summary">
+          <div class="coverage-label">Files skipped</div>
+          <div class="coverage-value">{fmt(skippedTotal)}</div>
+          <div class="coverage-detail">excluded before counting lines</div>
+        </div>
+        <div class="coverage-breakdown">
+          {skippedRows.length === 0 ? (
+            <div class="coverage-row">
+              <span>No skipped files</span>
+              <strong class="num">0</strong>
+            </div>
+          ) : (
+            skippedRows.map(([label, count]) => (
+              <div class="coverage-row">
+                <span>{label}</span>
+                <strong class="num">{fmt(Number(count))}</strong>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <div class="section-head">
+        <span class="section-num">03</span>
         <span class="section-title">Language breakdown</span>
         <div class="section-rule" />
       </div>
@@ -143,7 +210,7 @@ export const ReportPage: FC<{ data: ReportData }> = ({ data }) => {
       </table>
 
       <div class="section-head">
-        <span class="section-num">03</span>
+        <span class="section-num">04</span>
         <span class="section-title">Notable files</span>
         <div class="section-rule" />
       </div>
@@ -185,7 +252,7 @@ export const ReportPage: FC<{ data: ReportData }> = ({ data }) => {
       </div>
 
       <div class="section-head" style="border-top: 1px solid var(--border);">
-        <span class="section-num">04</span>
+        <span class="section-num">05</span>
         <span class="section-title">Annotations harvested</span>
         <div class="section-rule" />
         <span class="label num">{fmt(data.annotations.length)} TOTAL</span>
@@ -225,7 +292,7 @@ export const ReportPage: FC<{ data: ReportData }> = ({ data }) => {
       </div>
 
       <div class="section-head">
-        <span class="section-num">05</span>
+        <span class="section-num">06</span>
         <span class="section-title">Size comparison</span>
         <div class="section-rule" />
       </div>
