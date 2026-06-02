@@ -1,3 +1,5 @@
+import { splitSourceLines } from "./counter.js";
+
 export type AnnotationKind = "TODO" | "FIXME" | "HACK" | "XXX" | "NOTE" | "BUG" | "OPTIMIZE" | "REVIEW";
 
 export type Annotation = {
@@ -11,7 +13,7 @@ const ANNOTATION_RE = /\b(TODO|FIXME|HACK|XXX|NOTE|BUG|OPTIMIZE|REVIEW)\b\s*[:\-
 
 export function harvestAnnotations(file: string, content: string): Annotation[] {
   const out: Annotation[] = [];
-  const lines = content.split("\n");
+  const lines = splitSourceLines(content);
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const m = ANNOTATION_RE.exec(line);

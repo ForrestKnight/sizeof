@@ -54,6 +54,7 @@ const SKIP_FILES = new Set([
 
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 const NOTABLE_FILE_LIMIT = 8;
+const MAX_ANNOTATIONS = 5000;
 
 type PathSkipReason = keyof Pick<
   ScanCoverage["skipped"],
@@ -160,13 +161,16 @@ app.get("/favicon.svg", (c) => {
 app.get("/scan", async (c) => {
   const url = c.req.query("url");
   if (!url) return c.redirect("/");
+  const wantsJson = c.req.query("format") === "json";
 
   const start = Date.now();
 
   const spec = parseRepoUrl(url);
   if (!spec) {
+    const message = "Could not parse that URL. Provide a github.com or codeberg.org repository link.";
+    if (wantsJson) return c.json({ error: message }, 400);
     return c.html(
-      <ErrorPage message="Could not parse that URL. Provide a github.com or codeberg.org repository link." />,
+      <ErrorPage message={message} />,
       400,
     );
   }
@@ -245,9 +249,10 @@ app.get("/scan", async (c) => {
       totalBytes += entry.size;
       totalFiles++;
 
-      if (allAnnotations.length < 5000) {
+      if (allAnnotations.length < MAX_ANNOTATIONS) {
+        const remaining = MAX_ANNOTATIONS - allAnnotations.length;
         const anns = harvestAnnotations(path, content);
-        allAnnotations.push(...anns);
+        allAnnotations.push(...anns.slice(0, remaining));
       }
 
       const fileStats = { path, language: lang.name, lines: counts.total, comments: counts.comment };
@@ -257,8 +262,11 @@ app.get("/scan", async (c) => {
     }
 
     if (totalFiles === 0) {
+      const message =
+        "No source files detected in this repository — it may be empty, binary-only, or use unsupported languages.";
+      if (wantsJson) return c.json({ error: message, coverage }, 404);
       return c.html(
-        <ErrorPage message="No source files detected in this repository — it may be empty, binary-only, or use unsupported languages." />,
+        <ErrorPage message={message} />,
         404,
       );
     }
@@ -328,12 +336,15 @@ app.get("/scan", async (c) => {
       mostCommented,
     };
 
+    if (wantsJson) return c.json(data);
     return c.html(<ReportPage data={data} />);
   } catch (err) {
     if (err instanceof RepoError) {
+      if (wantsJson) return c.json({ error: err.message }, err.status as any);
       return c.html(<ErrorPage message={err.message} />, err.status as any);
     }
     console.error(err);
+    if (wantsJson) return c.json({ error: "An unexpected error occurred while scanning the repository." }, 500);
     return c.html(
       <ErrorPage message="An unexpected error occurred while scanning the repository. Try again or pick a smaller repo." />,
       500,

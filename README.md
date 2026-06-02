@@ -5,9 +5,11 @@ Paste a GitHub or Codeberg URL at [sizeof.dev](https://sizeof.dev) and get back 
 What you get:
 
 - Per-language line counts (code, comment, blank) across 80+ languages
+- Scan coverage showing archive files seen, source files scanned, and skipped files by reason
 - TODO, FIXME, HACK, XXX, NOTE, BUG markers with file and line number
 - Longest, shortest, and most-commented files
 - Size comparisons — paperback novels, hours of reading aloud, printed pages
+- JSON export with the same data as the rendered report
 
 ## Supported hosts
 
@@ -16,7 +18,17 @@ What you get:
 
 ## How it counts
 
-A character-by-character state machine walks each file, tracking strings and comments per language so that `// a string with // in it` is not miscounted as a comment. Each line is classified as exactly one of: code, comment, or blank. Files matching common generated/vendored directories (`node_modules`, `dist`, `.git`, `vendor`, `target`, `__pycache__`, etc.) and lock files (`package-lock.json`, `Cargo.lock`, `go.sum`, etc.) are skipped. Binary files are detected by null-byte probing and skipped.
+A character-by-character state machine walks each eligible source file, tracking strings and comments per language so that `// a string with // in it` is not miscounted as a comment. Each line is classified as exactly one of: code, comment, or blank. Files matching common generated/vendored directories (`node_modules`, `dist`, `.git`, `vendor`, `target`, `__pycache__`, etc.) and lock files (`package-lock.json`, `Cargo.lock`, `go.sum`, etc.) are skipped. Binary files are detected by null-byte probing and skipped.
+
+The scanner processes every eligible source file in the repository archive. It does not clone the repository and does not stop at a fixed file-count cap, though individual files over 4 MB are skipped to keep Worker memory bounded.
+
+## JSON export
+
+Add `format=json` to a scan URL:
+
+```
+https://sizeof.dev/scan?url=https%3A%2F%2Fgithub.com%2Fhonojs%2Fhono&format=json
+```
 
 ## Local development
 
@@ -42,7 +54,7 @@ npm run deploy
 ## Stack
 
 - [Hono](https://hono.dev/) — routing and server-side JSX
-- [fflate](https://github.com/101arrowz/fflate) — in-memory gzip decompression
+- DecompressionStream — in-memory gzip decompression
 - Cloudflare Workers — edge runtime
 - TypeScript
 

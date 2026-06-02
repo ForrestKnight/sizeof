@@ -20,8 +20,16 @@ export function addCounts(a: LineCounts, b: LineCounts): LineCounts {
   };
 }
 
+export function splitSourceLines(content: string): string[] {
+  const normalized = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  if (normalized.length === 0) return [];
+
+  const withoutFinalNewline = normalized.endsWith("\n") ? normalized.slice(0, -1) : normalized;
+  return withoutFinalNewline.length === 0 ? [""] : withoutFinalNewline.split("\n");
+}
+
 export function countLines(content: string, lang: LanguageDef): LineCounts {
-  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  const lines = splitSourceLines(content);
 
   let blockEnd: string | null = null;
   let stringEnd: string | null = null;

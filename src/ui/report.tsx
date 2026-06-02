@@ -85,6 +85,13 @@ export const ReportPage: FC<{ data: ReportData }> = ({ data }) => {
               {data.description}
             </p>
           ) : null}
+          <a
+            href={`/scan?url=${encodeURIComponent(data.repoUrl)}&format=json`}
+            class="label"
+            style="display: inline-block; color: var(--accent); text-decoration: none; margin-top: 18px;"
+          >
+            JSON export
+          </a>
         </div>
         <dl class="report-meta">
           <dt>Host</dt>
